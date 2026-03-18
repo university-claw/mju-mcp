@@ -157,6 +157,42 @@ export interface AssignmentDetailResult {
   submission?: AssignmentSubmissionInfo;
 }
 
+export interface ActivityQnaTarget {
+  menuId: string;
+  articleId: number;
+  subArticleId?: string;
+}
+
+export interface MaterialSummary {
+  articleId: number;
+  title: string;
+  week?: number;
+  weekLabel?: string;
+  attachmentCount?: number;
+}
+
+export interface MaterialListResult {
+  kjkey: string;
+  courseTitle?: string;
+  week?: number;
+  materials: MaterialSummary[];
+}
+
+export interface MaterialDetailResult {
+  kjkey: string;
+  courseTitle?: string;
+  articleId: number;
+  title: string;
+  openAt?: string;
+  author?: string;
+  viewCount?: number;
+  bodyHtml: string;
+  bodyText: string;
+  contentSeq?: string;
+  attachments: LmsAttachment[];
+  qnaTarget?: ActivityQnaTarget;
+}
+
 export interface LoginSnapshotResult {
   loggedIn: boolean;
   usedSavedSession: boolean;

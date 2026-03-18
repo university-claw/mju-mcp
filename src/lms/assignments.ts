@@ -1,5 +1,6 @@
 import { load } from "cheerio";
 
+import { parseActivityListItems } from "./activity-list.js";
 import {
   STUDENT_ACTIVITY_LIST_URL,
   STUDENT_REPORT_VIEW_URL
@@ -49,82 +50,22 @@ function parsePositiveInt(value: string | undefined): number | undefined {
   return parsed;
 }
 
-function isAssignmentActivity(className: string | undefined): boolean {
-  return (
-    className
-      ?.split(/\s+/)
-      .some((token) => token === "activity_report1" || token.startsWith("activity_report")) ??
-    false
-  );
-}
-
-function parseActivityId(
-  idValue: string | undefined,
-  onclickValue: string | undefined
-): number | undefined {
-  const matchedId = idValue?.match(/^class_menu_report_(\d+)$/);
-  if (matchedId?.[1]) {
-    return parsePositiveInt(matchedId[1]);
-  }
-
-  const matchedOnclick = onclickValue?.match(/'report'\s*,\s*'(\d+)'/);
-  return parsePositiveInt(matchedOnclick?.[1]);
-}
-
 export function parseAssignmentListHtml(
   html: string,
   options: { week?: number } = {}
 ): AssignmentSummary[] {
-  const $ = load(html);
-  const assignments: AssignmentSummary[] = [];
-  let currentWeek: number | undefined;
-  let currentWeekLabel: string | undefined;
-  const container = $("#class_activity_list");
-  const nodes =
-    container.length > 0
-      ? container.find(".activity_week, .activity")
-      : $.root().find(".activity_week, .activity");
-
-  nodes.each((_, element) => {
-    const item = $(element);
-
-    if (item.hasClass("activity_week")) {
-      currentWeek = parsePositiveInt(item.attr("data-week"));
-      currentWeekLabel = normalizeText(item.text()) || undefined;
-      return;
-    }
-
-    if (!isAssignmentActivity(item.attr("class"))) {
-      return;
-    }
-
-    if (options.week !== undefined && currentWeek !== options.week) {
-      return;
-    }
-
-    const rtSeq = parseActivityId(item.attr("id"), item.attr("onclick"));
-    const title = normalizeText(item.find(".activity_title").first().text());
-    if (!rtSeq || !title) {
-      return;
-    }
-
-    const statusLabel =
-      normalizeText(item.find(".activity_info_title").first().text()) || undefined;
-    const statusText =
-      normalizeText(item.find(".activity_info_text").first().text()) || undefined;
-
-    assignments.push({
-      rtSeq,
-      title,
-      isSubmitted: item.find(".submit_check").length > 0,
-      ...(currentWeek !== undefined ? { week: currentWeek } : {}),
-      ...(currentWeekLabel ? { weekLabel: currentWeekLabel } : {}),
-      ...(statusLabel ? { statusLabel } : {}),
-      ...(statusText ? { statusText } : {})
-    });
-  });
-
-  return assignments;
+  return parseActivityListItems(html)
+    .filter((item) => item.menuId === "report")
+    .filter((item) => options.week === undefined || item.week === options.week)
+    .map((item) => ({
+      rtSeq: item.activityId,
+      title: item.title,
+      isSubmitted: item.hasIndicator,
+      ...(item.week !== undefined ? { week: item.week } : {}),
+      ...(item.weekLabel ? { weekLabel: item.weekLabel } : {}),
+      ...(item.statusLabel ? { statusLabel: item.statusLabel } : {}),
+      ...(item.statusText ? { statusText: item.statusText } : {})
+    }));
 }
 
 function parseDetailMetaMap(html: string): Map<string, string> {
