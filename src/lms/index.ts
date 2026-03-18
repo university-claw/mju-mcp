@@ -8,6 +8,7 @@ export * from "./courses.js";
 export * from "./course-links.js";
 export * from "./materials.js";
 export * from "./notices.js";
+export * from "./online.js";
 export * from "./session-store.js";
 export * from "./sso-crypto.js";
 export * from "./sso-client.js";

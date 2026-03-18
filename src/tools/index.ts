@@ -5,6 +5,7 @@ import { registerAssignmentTools } from "./assignments.js";
 import { registerCourseTools } from "./courses.js";
 import { registerMaterialTools } from "./materials.js";
 import { registerNoticeTools } from "./notices.js";
+import { registerOnlineTools } from "./online.js";
 
 export function registerMjuLmsTools(
   server: McpServer,
@@ -14,4 +15,5 @@ export function registerMjuLmsTools(
   registerCourseTools(server, context);
   registerMaterialTools(server, context);
   registerNoticeTools(server, context);
+  registerOnlineTools(server, context);
 }
