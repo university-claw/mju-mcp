@@ -6,6 +6,13 @@ export interface DecodedResponse {
   headers: Record<string, string | string[] | undefined>;
 }
 
+export interface BinaryResponse {
+  statusCode: number;
+  url: string;
+  rawBody: Buffer;
+  headers: Record<string, string | string[] | undefined>;
+}
+
 export interface SsoForm {
   action: string;
   c_r_t: string;
@@ -68,6 +75,17 @@ export interface LmsAttachment {
   previewUrl?: string;
   sizeLabel?: string;
   fileType?: string;
+}
+
+export interface DownloadedAttachmentFile {
+  fileName: string;
+  savedPath: string;
+  finalUrl: string;
+  sourceUrl: string;
+  byteLength: number;
+  statusCode: number;
+  contentType?: string;
+  contentDisposition?: string;
 }
 
 export interface ClassroomContext {

@@ -17,6 +17,7 @@ import {
   genSsoKeyMaterial
 } from "./sso-crypto.js";
 import type {
+  BinaryResponse,
   CourseCandidate,
   DecodedResponse,
   LoginSnapshotResult,
@@ -28,6 +29,15 @@ function toDecodedResponse(response: Response<Buffer>): DecodedResponse {
     statusCode: response.statusCode,
     url: response.url,
     text: decodeHtml(response.rawBody, response.headers),
+    rawBody: response.rawBody,
+    headers: response.headers
+  };
+}
+
+function toBinaryResponse(response: Response<Buffer>): BinaryResponse {
+  return {
+    statusCode: response.statusCode,
+    url: response.url,
     rawBody: response.rawBody,
     headers: response.headers
   };
@@ -130,6 +140,13 @@ export class MjuLmsSsoClient {
       responseType: "buffer"
     });
     return toDecodedResponse(response);
+  }
+
+  async getBinary(url: string | URL): Promise<BinaryResponse> {
+    const response = await this.http.get(url.toString(), {
+      responseType: "buffer"
+    });
+    return toBinaryResponse(response);
   }
 
   async postForm(

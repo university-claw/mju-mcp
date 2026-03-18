@@ -11,16 +11,25 @@ const LOGIN_FAILURE_MARKERS = [
 
 const LOGIN_SUCCESS_MARKERS = ["/ilos/main/main_form.acl", "top1menu", "logout"];
 
+function hasFailureMarker(url: string, text: string): boolean {
+  return LOGIN_FAILURE_MARKERS.some(
+    (marker) => url.includes(marker) || text.includes(marker)
+  );
+}
+
+export function looksLikeLoginPage(
+  response: Pick<DecodedResponse, "url" | "text">
+): boolean {
+  const url = response.url.toLowerCase();
+  return hasFailureMarker(url, response.text);
+}
+
 export function looksLoggedIn(response: DecodedResponse): boolean {
   const url = response.url.toLowerCase();
   const text = response.text;
   const lowerText = text.toLowerCase();
 
-  if (
-    LOGIN_FAILURE_MARKERS.some(
-      (marker) => url.includes(marker) || text.includes(marker)
-    )
-  ) {
+  if (hasFailureMarker(url, text)) {
     return false;
   }
 

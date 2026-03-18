@@ -16,6 +16,7 @@ export interface LmsRuntimeConfig {
   sessionFile: string;
   mainHtmlFile: string;
   coursesFile: string;
+  downloadsDir: string;
   credentialServiceName: string;
   userAgent: string;
 }
@@ -28,6 +29,7 @@ export interface LmsRuntimeConfigOverrides {
   sessionFile?: string | undefined;
   mainHtmlFile?: string | undefined;
   coursesFile?: string | undefined;
+  downloadsDir?: string | undefined;
   credentialServiceName?: string | undefined;
   userAgent?: string | undefined;
 }
@@ -72,6 +74,11 @@ export function resolveLmsRuntimeConfig(
       cleanPathValue(overrides.coursesFile) ??
         cleanPathValue(process.env.MJU_LMS_COURSES_FILE) ??
         storagePaths.coursesFile
+    ),
+    downloadsDir: path.resolve(
+      cleanPathValue(overrides.downloadsDir) ??
+        cleanPathValue(process.env.MJU_LMS_DOWNLOADS_DIR) ??
+        storagePaths.downloadsDir
     ),
     credentialServiceName:
       clean(

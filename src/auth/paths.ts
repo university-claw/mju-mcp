@@ -5,6 +5,7 @@ export interface AppStoragePaths {
   rootDir: string;
   stateDir: string;
   snapshotDir: string;
+  downloadsDir: string;
   profileFile: string;
   sessionFile: string;
   mainHtmlFile: string;
@@ -38,11 +39,13 @@ export function buildAppStoragePaths(rootDir: string): AppStoragePaths {
   const resolvedRoot = path.resolve(rootDir);
   const stateDir = path.join(resolvedRoot, "state");
   const snapshotDir = path.join(resolvedRoot, "snapshots");
+  const downloadsDir = path.join(resolvedRoot, "downloads");
 
   return {
     rootDir: resolvedRoot,
     stateDir,
     snapshotDir,
+    downloadsDir,
     profileFile: path.join(stateDir, "profile.json"),
     sessionFile: path.join(stateDir, "session.json"),
     mainHtmlFile: path.join(snapshotDir, "main.html"),
