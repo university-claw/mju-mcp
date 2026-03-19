@@ -14,6 +14,11 @@ import type {
   OnlineWeekListResult
 } from "../lms/types.js";
 import type { AppContext } from "../mcp/app-context.js";
+import {
+  courseReferenceInputSchemaShape,
+  rememberCourseContext,
+  resolveCourseReference
+} from "./course-resolver.js";
 import { requireCredentials } from "./credentials.js";
 
 const onlineWeekSchema = {
@@ -125,9 +130,9 @@ export function registerOnlineTools(
     {
       title: "온라인 학습 주차 조회",
       description:
-        "특정 강의의 온라인 학습 주차 목록을 조회합니다. 강의 식별자는 KJKEY를 사용합니다.",
+        "특정 강의의 온라인 학습 주차 목록을 조회합니다. course 또는 kjkey 를 입력할 수 있고, 둘 다 없으면 같은 세션의 마지막 강의를 사용합니다.",
       inputSchema: {
-        kjkey: z.string().describe("조회할 강의의 KJKEY 입니다.")
+        ...courseReferenceInputSchemaShape
       },
       outputSchema: {
         kjkey: z.string(),
@@ -135,15 +140,30 @@ export function registerOnlineTools(
         weeks: z.array(z.object(onlineWeekSchema))
       }
     },
-    async ({ kjkey }, _extra) => {
-      const { userId, password } = await requireCredentials(context);
+    async ({ course, kjkey }, extra) => {
+      const credentials = await requireCredentials(context);
       const client = context.createLmsClient();
+      const resolvedCourse = await resolveCourseReference(
+        context,
+        extra,
+        client,
+        credentials,
+        { course, kjkey }
+      );
       const options: ListOnlineWeeksOptions = {
-        userId,
-        password,
-        kjkey
+        userId: credentials.userId,
+        password: credentials.password,
+        kjkey: resolvedCourse.kjkey
       };
       const result = await listCourseOnlineWeeks(client, options);
+      rememberCourseContext(context, extra, {
+        kjkey: result.kjkey,
+        courseTitle: result.courseTitle ?? resolvedCourse.courseTitle,
+        courseCode: resolvedCourse.courseCode,
+        year: resolvedCourse.year,
+        term: resolvedCourse.term,
+        termLabel: resolvedCourse.termLabel
+      });
 
       return {
         content: [
@@ -162,9 +182,9 @@ export function registerOnlineTools(
     {
       title: "온라인 학습 메타 조회",
       description:
-        "특정 온라인 학습 주차의 메타 정보와 학습 아이템 목록을 조회합니다. 강의 식별자는 KJKEY를 사용합니다.",
+        "특정 온라인 학습 주차의 메타 정보와 학습 아이템 목록을 조회합니다. course 또는 kjkey 를 입력할 수 있고, 둘 다 없으면 같은 세션의 마지막 강의를 사용합니다.",
       inputSchema: {
-        kjkey: z.string().describe("조회할 강의의 KJKEY 입니다."),
+        ...courseReferenceInputSchemaShape,
         lectureWeeks: z.number().int().describe("조회할 온라인 학습의 LECTURE_WEEKS 값입니다.")
       },
       outputSchema: {
@@ -183,16 +203,31 @@ export function registerOnlineTools(
         items: z.array(z.object(onlineItemSchema))
       }
     },
-    async ({ kjkey, lectureWeeks }, _extra) => {
-      const { userId, password } = await requireCredentials(context);
+    async ({ course, kjkey, lectureWeeks }, extra) => {
+      const credentials = await requireCredentials(context);
       const client = context.createLmsClient();
+      const resolvedCourse = await resolveCourseReference(
+        context,
+        extra,
+        client,
+        credentials,
+        { course, kjkey }
+      );
       const options: GetOnlineWeekOptions = {
-        userId,
-        password,
-        kjkey,
+        userId: credentials.userId,
+        password: credentials.password,
+        kjkey: resolvedCourse.kjkey,
         lectureWeeks
       };
       const result = await getCourseOnlineWeek(client, options);
+      rememberCourseContext(context, extra, {
+        kjkey: result.kjkey,
+        courseTitle: result.courseTitle ?? resolvedCourse.courseTitle,
+        courseCode: resolvedCourse.courseCode,
+        year: resolvedCourse.year,
+        term: resolvedCourse.term,
+        termLabel: resolvedCourse.termLabel
+      });
 
       return {
         content: [

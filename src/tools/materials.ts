@@ -14,6 +14,11 @@ import type {
   MaterialListResult
 } from "../lms/types.js";
 import type { AppContext } from "../mcp/app-context.js";
+import {
+  courseReferenceInputSchemaShape,
+  rememberCourseContext,
+  resolveCourseReference
+} from "./course-resolver.js";
 import { requireCredentials } from "./credentials.js";
 
 const attachmentSchema = {
@@ -118,9 +123,9 @@ export function registerMaterialTools(
     {
       title: "자료 목록 조회",
       description:
-        "특정 강의의 자료 활동 목록을 조회합니다. 강의 식별자는 KJKEY를 사용합니다.",
+        "특정 강의의 자료 활동 목록을 조회합니다. course 또는 kjkey 를 입력할 수 있고, 둘 다 없으면 같은 세션의 마지막 강의를 사용합니다.",
       inputSchema: {
-        kjkey: z.string().describe("조회할 강의의 KJKEY 입니다."),
+        ...courseReferenceInputSchemaShape,
         week: z.number().int().positive().optional().describe("특정 주차만 보고 싶을 때 사용하는 필터입니다.")
       },
       outputSchema: {
@@ -130,16 +135,31 @@ export function registerMaterialTools(
         materials: z.array(z.object(materialSummarySchema))
       }
     },
-    async ({ kjkey, week }, _extra) => {
-      const { userId, password } = await requireCredentials(context);
+    async ({ course, kjkey, week }, extra) => {
+      const credentials = await requireCredentials(context);
       const client = context.createLmsClient();
+      const resolvedCourse = await resolveCourseReference(
+        context,
+        extra,
+        client,
+        credentials,
+        { course, kjkey }
+      );
       const options: ListMaterialsOptions = {
-        userId,
-        password,
-        kjkey,
+        userId: credentials.userId,
+        password: credentials.password,
+        kjkey: resolvedCourse.kjkey,
         ...(week !== undefined ? { week } : {})
       };
       const result = await listCourseMaterials(client, options);
+      rememberCourseContext(context, extra, {
+        kjkey: result.kjkey,
+        courseTitle: result.courseTitle ?? resolvedCourse.courseTitle,
+        courseCode: resolvedCourse.courseCode,
+        year: resolvedCourse.year,
+        term: resolvedCourse.term,
+        termLabel: resolvedCourse.termLabel
+      });
 
       return {
         content: [
@@ -158,9 +178,9 @@ export function registerMaterialTools(
     {
       title: "자료 상세 조회",
       description:
-        "특정 강의의 자료 활동 상세 본문과 첨부를 조회합니다. 강의 식별자는 KJKEY를 사용합니다.",
+        "특정 강의의 자료 활동 상세 본문과 첨부를 조회합니다. course 또는 kjkey 를 입력할 수 있고, 둘 다 없으면 같은 세션의 마지막 강의를 사용합니다.",
       inputSchema: {
-        kjkey: z.string().describe("조회할 강의의 KJKEY 입니다."),
+        ...courseReferenceInputSchemaShape,
         articleId: z.number().int().describe("조회할 자료의 ARTL_NUM 입니다.")
       },
       outputSchema: {
@@ -178,16 +198,31 @@ export function registerMaterialTools(
         qnaTarget: z.object(qnaTargetSchema).optional()
       }
     },
-    async ({ kjkey, articleId }, _extra) => {
-      const { userId, password } = await requireCredentials(context);
+    async ({ course, kjkey, articleId }, extra) => {
+      const credentials = await requireCredentials(context);
       const client = context.createLmsClient();
+      const resolvedCourse = await resolveCourseReference(
+        context,
+        extra,
+        client,
+        credentials,
+        { course, kjkey }
+      );
       const options: GetMaterialOptions = {
-        userId,
-        password,
-        kjkey,
+        userId: credentials.userId,
+        password: credentials.password,
+        kjkey: resolvedCourse.kjkey,
         articleId
       };
       const result = await getCourseMaterial(client, options);
+      rememberCourseContext(context, extra, {
+        kjkey: result.kjkey,
+        courseTitle: result.courseTitle ?? resolvedCourse.courseTitle,
+        courseCode: resolvedCourse.courseCode,
+        year: resolvedCourse.year,
+        term: resolvedCourse.term,
+        termLabel: resolvedCourse.termLabel
+      });
 
       return {
         content: [

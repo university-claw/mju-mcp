@@ -7,6 +7,11 @@ import {
   downloadNoticeAttachment
 } from "../lms/attachment-downloads.js";
 import type { AppContext } from "../mcp/app-context.js";
+import {
+  courseReferenceInputSchemaShape,
+  rememberCourseContext,
+  resolveCourseReference
+} from "./course-resolver.js";
 import { requireCredentials } from "./credentials.js";
 
 function formatDownloadText(result: {
@@ -39,12 +44,12 @@ export function registerAttachmentTools(
     {
       title: "첨부파일 로컬 다운로드",
       description:
-        "공지, 자료, 과제 첨부파일을 로컬 디렉터리에 저장합니다. assignment는 prompt/submission 첨부를 모두 지원합니다.",
+        "공지, 자료, 과제 첨부파일을 로컬 디렉터리에 저장합니다. assignment는 prompt/submission 첨부를 모두 지원하며, course 또는 kjkey 를 생략하면 같은 세션의 마지막 강의를 사용합니다.",
       inputSchema: {
         kind: z
           .enum(["notice", "material", "assignment"])
           .describe("다운로드 대상 종류입니다."),
-        kjkey: z.string().describe("강의 KJKEY 입니다."),
+        ...courseReferenceInputSchemaShape,
         articleId: z
           .number()
           .int()
@@ -83,15 +88,23 @@ export function registerAttachmentTools(
     },
     async ({
       kind,
+      course,
       kjkey,
       articleId,
       rtSeq,
       attachmentIndex,
       attachmentKind,
       outputDir
-    }) => {
-      const { userId, password } = await requireCredentials(context);
+    }, extra) => {
+      const credentials = await requireCredentials(context);
       const client = context.createLmsClient();
+      const resolvedCourse = await resolveCourseReference(
+        context,
+        extra,
+        client,
+        credentials,
+        { course, kjkey }
+      );
 
       let result;
       switch (kind) {
@@ -100,9 +113,9 @@ export function registerAttachmentTools(
             throw new Error("공지 첨부 다운로드에는 articleId 가 필요합니다.");
           }
           result = await downloadNoticeAttachment(client, context.lmsConfig, {
-            userId,
-            password,
-            kjkey,
+            userId: credentials.userId,
+            password: credentials.password,
+            kjkey: resolvedCourse.kjkey,
             articleId,
             ...(attachmentIndex !== undefined ? { attachmentIndex } : {}),
             ...(outputDir ? { outputDir } : {})
@@ -113,9 +126,9 @@ export function registerAttachmentTools(
             throw new Error("자료 첨부 다운로드에는 articleId 가 필요합니다.");
           }
           result = await downloadMaterialAttachment(client, context.lmsConfig, {
-            userId,
-            password,
-            kjkey,
+            userId: credentials.userId,
+            password: credentials.password,
+            kjkey: resolvedCourse.kjkey,
             articleId,
             ...(attachmentIndex !== undefined ? { attachmentIndex } : {}),
             ...(outputDir ? { outputDir } : {})
@@ -126,9 +139,9 @@ export function registerAttachmentTools(
             throw new Error("과제 첨부 다운로드에는 rtSeq 가 필요합니다.");
           }
           result = await downloadAssignmentAttachment(client, context.lmsConfig, {
-            userId,
-            password,
-            kjkey,
+            userId: credentials.userId,
+            password: credentials.password,
+            kjkey: resolvedCourse.kjkey,
             rtSeq,
             ...(attachmentIndex !== undefined ? { attachmentIndex } : {}),
             ...(attachmentKind ? { attachmentKind } : {}),
@@ -136,6 +149,14 @@ export function registerAttachmentTools(
           });
           break;
       }
+      rememberCourseContext(context, extra, {
+        kjkey: resolvedCourse.kjkey,
+        courseTitle: resolvedCourse.courseTitle,
+        courseCode: resolvedCourse.courseCode,
+        year: resolvedCourse.year,
+        term: resolvedCourse.term,
+        termLabel: resolvedCourse.termLabel
+      });
 
       return {
         content: [

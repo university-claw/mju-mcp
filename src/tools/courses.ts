@@ -5,6 +5,7 @@ import { listRegularTakenCourses } from "../lms/courses.js";
 import type { AppContext } from "../mcp/app-context.js";
 import type { ListCoursesOptions } from "../lms/courses.js";
 import type { CourseListResult } from "../lms/types.js";
+import { rememberCourseContext } from "./course-resolver.js";
 import { requireCredentials } from "./credentials.js";
 
 const courseTermSchema = {
@@ -85,7 +86,7 @@ export function registerCourseTools(
         courses: z.array(z.object(courseSchema))
       }
     },
-    async ({ year, term, search, allTerms }, _extra) => {
+    async ({ year, term, search, allTerms }, extra) => {
       const { userId, password } = await requireCredentials(context);
       const client = context.createLmsClient();
       const options: ListCoursesOptions = {
@@ -97,6 +98,17 @@ export function registerCourseTools(
         ...(allTerms !== undefined ? { allTerms } : {})
       };
       const result = await listRegularTakenCourses(client, options);
+      const course = result.courses.length === 1 ? result.courses[0] : undefined;
+      if (course) {
+        rememberCourseContext(context, extra, {
+          kjkey: course.kjkey,
+          courseTitle: course.title,
+          courseCode: course.courseCode,
+          year: course.year,
+          term: course.term,
+          termLabel: course.termLabel
+        });
+      }
 
       return {
         content: [
