@@ -1,62 +1,32 @@
-# myongji-lms-mcp
+# mju-mcp
 
-명지대학교 LMS를 감싸는 read-only MCP 서버 프로젝트입니다.
+`mju-mcp` 는 명지대학교 계열 서비스를 MCP tool로 노출하는 TypeScript 서버입니다.
 
-## 현재 상태
+현재 범위는 세 서비스로 나뉩니다.
 
-현재까지 구현된 범위는 다음과 같습니다.
+- LMS: 강의, 공지, 과제, 자료, 온라인 학습, 첨부 다운로드, 집약형 요약, 과제 제출/수정/삭제
+- MSI: 수강과목시간표, 현재 학기 수강성적, 성적이력, 졸업학점 조회
+- UCheck: 과목별 출석현황 조회
 
-- TypeScript 기반 MCP 서버 골격
-- 명지대 LMS SSO 로그인 포팅
-- 세션 저장 및 세션 재사용
-- stdio 기반 MCP 서버 부트스트랩
-- 첫 번째 read-only tool: `mju_lms_list_courses`
+읽기 기능이 중심이지만, LMS 과제 제출/수정/삭제처럼 실제 상태를 바꾸는 기능도 일부 지원합니다. 쓰기 tool은 모두 보수적인 승인 흐름을 거칩니다.
 
-즉 지금은 "로그인 가능 여부를 확인하는 단계"를 넘어서,
-실제 MCP tool을 하나씩 붙여 나갈 수 있는 상태입니다.
+## 주요 특징
 
-## 사용 기술
+- 명지대 SSO 기반 로그인
+- 저장 세션 재사용
+- Windows Credential Manager 기반 저장 로그인
+- stdio 기반 MCP 서버
+- LMS 강의 식별 UX 개선
+  - `course` 또는 `kjkey`
+  - 같은 세션의 마지막 강의 기본값
+- LMS 쓰기 tool 2단계 승인
+  - `confirm=true`
+  - `approvalToken`
+- MSI, UCheck 세션 분리 저장
 
-- MCP 서버 SDK: `@modelcontextprotocol/sdk` v1.x
-- 언어: TypeScript
-- HTTP/세션: `got` + `tough-cookie`
-- HTML 파싱: `cheerio`
-- 스키마 검증: `zod`
+## 빠른 시작
 
-현재는 안정적인 SDK 라인인 v1.x를 기준으로 구현하고 있습니다.
-
-## 디렉터리 구조
-
-- `src/index.ts`: stdio MCP 서버 진입점
-- `src/cli/login-sso.ts`: SSO 로그인 단독 검증용 CLI
-- `src/lms/`: 명지대 LMS 로그인, 세션, 파서, 서비스
-- `src/mcp/`: MCP 서버 생성과 앱 컨텍스트
-- `src/tools/`: MCP tool 등록
-
-## 현재 구현된 tool
-
-### `mju_lms_list_courses`
-
-정규 수강과목 목록을 조회합니다.
-
-지원 범위:
-
-- 기본값: 최신 학기 수강과목
-- 특정 학기 조회: `year`, `term`
-- 전체 학기 조회: `allTerms`
-- 검색어 필터: `search`
-
-반환 정보:
-
-- 학기 목록
-- 선택된 학기
-- 강의명
-- 과목코드
-- 교수명
-- `KJKEY`
-- 강의실 진입 경로
-
-## 빠른 실행
+### 1. 설치
 
 ```bash
 npm install
@@ -64,32 +34,103 @@ npm run check
 npm run build
 ```
 
-SSO 로그인 확인:
+### 2. 인증 준비
+
+권장 방식은 Windows 저장 로그인입니다.
 
 ```bash
-npm run login:sso -- --id YOUR_ID --password YOUR_PASSWORD
-npm run login:sso -- --fresh-login --id YOUR_ID --password YOUR_PASSWORD
+npm run auth:login -- --id YOUR_ID --password YOUR_PASSWORD
 ```
 
-MCP 서버 실행:
+대안으로 환경 변수를 써도 됩니다.
+
+- `MJU_LMS_USER_ID`
+- `MJU_LMS_PASSWORD`
+
+### 3. 서버 실행
 
 ```bash
 npm run start
 ```
 
-## 환경 변수
+SSO 자체를 먼저 점검하고 싶으면:
 
-- `MJU_LMS_USER_ID`
-- `MJU_LMS_PASSWORD`
-- `MJU_LMS_SESSION_FILE`
-- `MJU_LMS_MAIN_HTML_FILE`
-- `MJU_LMS_COURSES_FILE`
+```bash
+npm run login:sso -- --id YOUR_ID --password YOUR_PASSWORD
+```
 
-## 다음 작업
+## 문서
 
-다음 우선순위는 아래 순서가 자연스럽습니다.
+- [시작하기](docs/getting-started.md)
+- [LMS Tool Reference](docs/tool-reference-lms.md)
+- [MSI Tool Reference](docs/tool-reference-msi.md)
+- [UCheck Tool Reference](docs/tool-reference-ucheck.md)
+- [아키텍처](docs/architecture.md)
+- [개발 가이드](docs/development.md)
+- [보안 가이드](docs/security.md)
 
-1. `공지` tool 추가
-2. `과제` tool 추가
-3. `자료 활동` tool 추가
-4. `온라인 학습 메타` tool 추가
+## 현재 지원 tool 요약
+
+### LMS
+
+- `mju_lms_login_sso`
+- `mju_lms_auth_status`
+- `mju_lms_auth_login`
+- `mju_lms_auth_logout`
+- `mju_lms_auth_forget`
+- `mju_lms_list_courses`
+- `mju_lms_list_notices`
+- `mju_lms_get_notice`
+- `mju_lms_list_materials`
+- `mju_lms_get_material`
+- `mju_lms_list_assignments`
+- `mju_lms_get_assignment`
+- `mju_lms_check_assignment_submission`
+- `mju_lms_submit_assignment`
+- `mju_lms_delete_assignment_submission`
+- `mju_lms_list_online_weeks`
+- `mju_lms_get_online_week`
+- `mju_lms_download_attachment`
+- `mju_lms_get_unsubmitted_assignments`
+- `mju_lms_get_due_assignments`
+- `mju_lms_get_action_items`
+- `mju_lms_get_unread_notices`
+- `mju_lms_get_incomplete_online_weeks`
+
+### MSI
+
+- `mju_msi_get_timetable`
+- `mju_msi_get_current_term_grades`
+- `mju_msi_get_grade_history`
+- `mju_msi_get_graduation_requirements`
+
+### UCheck
+
+- `mju_ucheck_get_course_attendance`
+
+## 저장 위치
+
+현재 코드의 기본 앱 데이터 디렉터리와 세션 파일 prefix 도 `mju-mcp` 기준으로 통일되어 있습니다.
+
+기본 앱 데이터 루트:
+
+- `%LOCALAPPDATA%\\mju-mcp`
+
+대표 저장 항목:
+
+- `state/profile.json`
+- `state/session.json`
+- `state/msi-session.json`
+- `state/ucheck-session.json`
+- `snapshots/`
+- `downloads/`
+
+## 안전장치
+
+- LMS 제출/수정/삭제는 `confirm=true` 와 승인 토큰이 모두 필요합니다.
+- 문서와 커밋에는 실계정 비밀번호, 세션 파일, 스냅샷 HTML을 넣지 않습니다.
+- 실데이터 검증은 가능하지만, 운영 상태를 바꾸는 호출은 항상 신중하게 수행해야 합니다.
+
+## 상태 메모
+
+이 저장소는 더 이상 “초기 부트스트랩 단계”가 아닙니다. LMS, MSI, UCheck 각각에 대해 실제 데이터를 기준으로 반복 검증된 기능을 제공하는 실사용 중심 MCP 서버입니다.
