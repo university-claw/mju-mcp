@@ -1,8 +1,8 @@
 {
-  "name": "myongji-lms-mcp",
+  "name": "mju-mcp",
   "version": "0.1.0",
   "private": true,
-  "description": "MCP server workspace for Myongji LMS",
+  "description": "MCP server workspace for MJU services",
   "type": "module",
   "engines": {
     "node": ">=22.0.0"

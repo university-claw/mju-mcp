@@ -28,11 +28,11 @@ export function resolveDefaultAppDataDir(
   if (process.platform === "win32") {
     const localAppData = clean(process.env.LOCALAPPDATA);
     if (localAppData) {
-      return path.resolve(localAppData, "myongji-lms-mcp");
+      return path.resolve(localAppData, "mju-mcp");
     }
   }
 
-  return path.resolve(os.homedir(), ".myongji-lms-mcp");
+  return path.resolve(os.homedir(), ".mju-mcp");
 }
 
 export function buildAppStoragePaths(rootDir: string): AppStoragePaths {

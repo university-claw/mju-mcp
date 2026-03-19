@@ -84,7 +84,7 @@ export function resolveLmsRuntimeConfig(
       clean(
         overrides.credentialServiceName ??
           process.env.MJU_LMS_CREDENTIAL_SERVICE_NAME
-      ) ?? "myongji-lms-mcp",
+      ) ?? "mju-mcp",
     userAgent:
       clean(overrides.userAgent ?? process.env.MJU_LMS_USER_AGENT) ??
       DEFAULT_USER_AGENT
