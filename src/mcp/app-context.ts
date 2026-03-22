@@ -14,6 +14,11 @@ import {
   type UcheckRuntimeConfig
 } from "../ucheck/config.js";
 import { MjuUcheckClient } from "../ucheck/client.js";
+import {
+  resolveLibraryRuntimeConfig,
+  type LibraryRuntimeConfig
+} from "../library/config.js";
+import { MjuLibraryClient } from "../library/client.js";
 
 export interface LastCourseContext {
   kjkey: string;
@@ -42,10 +47,12 @@ export interface AppContext {
   lmsConfig: LmsRuntimeConfig;
   msiConfig: MsiRuntimeConfig;
   ucheckConfig: UcheckRuntimeConfig;
+  libraryConfig: LibraryRuntimeConfig;
   authManager: AuthManager;
   createLmsClient(): MjuLmsSsoClient;
   createMsiClient(): MjuMsiClient;
   createUcheckClient(): MjuUcheckClient;
+  createLibraryClient(): MjuLibraryClient;
   getCredentials(): Promise<ResolvedLmsCredentials>;
   getLastCourseContext(sessionId?: string): LastCourseContext | undefined;
   setLastCourseContext(
@@ -77,6 +84,10 @@ export function createAppContext(
     userAgent: lmsConfig.userAgent
   }),
   ucheckConfig: UcheckRuntimeConfig = resolveUcheckRuntimeConfig({
+    appDataDir: lmsConfig.appDataDir,
+    userAgent: lmsConfig.userAgent
+  }),
+  libraryConfig: LibraryRuntimeConfig = resolveLibraryRuntimeConfig({
     appDataDir: lmsConfig.appDataDir,
     userAgent: lmsConfig.userAgent
   })
@@ -113,6 +124,7 @@ export function createAppContext(
     lmsConfig,
     msiConfig,
     ucheckConfig,
+    libraryConfig,
     authManager,
     createLmsClient() {
       return new MjuLmsSsoClient(lmsConfig);
@@ -122,6 +134,9 @@ export function createAppContext(
     },
     createUcheckClient() {
       return new MjuUcheckClient(ucheckConfig);
+    },
+    createLibraryClient() {
+      return new MjuLibraryClient(libraryConfig);
     },
     getCredentials() {
       return authManager.resolveCredentials();

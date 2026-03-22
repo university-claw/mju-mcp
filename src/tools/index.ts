@@ -7,6 +7,7 @@ import { registerAssignmentTools } from "./assignments.js";
 import { registerAttachmentTools } from "./attachments.js";
 import { registerAuthTools } from "./auth.js";
 import { registerCourseTools } from "./courses.js";
+import { registerLibraryTools } from "./library.js";
 import { registerMaterialTools } from "./materials.js";
 import { registerMsiTools } from "./msi.js";
 import { registerNoticeTools } from "./notices.js";
@@ -23,6 +24,7 @@ export function registerMjuLmsTools(
   registerAttachmentTools(server, context);
   registerAuthTools(server, context);
   registerCourseTools(server, context);
+  registerLibraryTools(server, context);
   registerMaterialTools(server, context);
   registerMsiTools(server, context);
   registerNoticeTools(server, context);
