@@ -13,6 +13,7 @@ flowchart LR
     Tools --> LMS["src/lms/*"]
     Tools --> MSI["src/msi/*"]
     Tools --> UCheck["src/ucheck/*"]
+    Tools --> Library["src/library/*"]
 ```
 
 핵심 아이디어는 다음과 같습니다.
@@ -59,6 +60,14 @@ flowchart LR
 - 강의 목록 조회
 - 출석현황 서비스
 
+### `src/library`
+
+- 도서관 토큰 로그인
+- 도서관 세션 저장/재사용
+- 스터디룸 목록 / 상세 조회
+- 스터디룸 예약 / 수정 / 취소
+- 동행자 이름+학번 -> 내부 patron id 해석
+
 ### `src/tools`
 
 - MCP tool 등록
@@ -86,6 +95,13 @@ flowchart LR
 - UCheck 메인 진입 URL 사용
 - UCheck 전용 세션 파일 분리
 
+### Library
+
+- 같은 계정 자격증명을 재사용하지만 LMS식 SSO 폼 암호화는 쓰지 않음
+- `POST /pyxis-api/api/login` 으로 access token 발급
+- `Pyxis-Auth-Token` 헤더 기반 JSON API 호출
+- 도서관 전용 세션 파일 분리
+
 ## 4. 앱 컨텍스트
 
 [`src/mcp/app-context.ts`](../src/mcp/app-context.ts) 는 현재 런타임의 공통 상태를 갖고 있습니다.
@@ -93,6 +109,7 @@ flowchart LR
 핵심 책임:
 
 - LMS / MSI / UCheck client 생성
+- Library client 생성
 - 저장 로그인 자격증명 해석
 - 세션별 마지막 강의 컨텍스트 저장
 - 쓰기 tool 승인 토큰 발급 / 검증

@@ -83,6 +83,13 @@ npm run auth:forget
 - SPA 구조라서 URL보다 JSON API 호출 체인이 중요합니다.
 - 화면 클릭 흐름은 내부 JSON 호출 재현으로 구현하는 편이 안정적입니다.
 
+### Library
+
+- 같은 계정을 쓰더라도 로그인 방식이 LMS SSO와 같다고 가정하면 안 됩니다.
+- 먼저 실제 로그인 응답이 cookie 기반인지 token 기반인지 확인하는 편이 안전합니다.
+- 스터디룸은 timeline, 이용 목적, 최소 인원 규칙을 함께 읽어야 합니다.
+- 동행자 입력은 이름/학번을 내부 patron id 로 해석하는 보조 API까지 확인해야 합니다.
+
 ## 5. 문서 운영 원칙
 
 현재 공개용 문서는 다음 파일을 기준으로 유지합니다.
@@ -92,6 +99,7 @@ npm run auth:forget
 - `docs/tool-reference-lms.md`
 - `docs/tool-reference-msi.md`
 - `docs/tool-reference-ucheck.md`
+- `docs/tool-reference-library.md`
 - `docs/architecture.md`
 - `docs/development.md`
 - `docs/security.md`
