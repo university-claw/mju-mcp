@@ -7,6 +7,7 @@ import type { AppContext } from "../mcp/app-context.js";
 import {
   cancelLibrarySeatReservation,
   createLibrarySeatReservation,
+  explainLibraryReadingRoomSeatPosition,
   getLibraryReadingRoomDetail,
   listLibraryReadingRooms,
   listLibrarySeatReservations,
@@ -15,6 +16,8 @@ import {
 } from "../library/seat-services.js";
 import type {
   LibrarySeatChargeableHour,
+  LibraryReadingRoomEntrance,
+  LibraryReadingRoomSeatPositionResult,
   LibrarySeatReservationPreview,
   LibrarySeatReservationRequestInput,
   LibrarySeatReservationSummary
@@ -106,6 +109,37 @@ const readingRoomDetailSchema = z.object({
   totalSeatCount: z.number().int(),
   occupiedSeatCount: z.number().int(),
   reservableSeatCount: z.number().int()
+});
+
+const readingRoomEntranceSchema = z.object({
+  key: z.string(),
+  label: z.string(),
+  side: z.enum([
+    "left-top",
+    "left-bottom",
+    "left-center",
+    "right-top",
+    "right-bottom",
+    "right-center",
+    "bottom-left",
+    "bottom-right"
+  ])
+});
+
+const seatPositionDescriptionSchema = z.object({
+  entranceKey: z.string(),
+  entranceLabel: z.string(),
+  description: z.string()
+});
+
+const readingRoomSeatPositionSchema = z.object({
+  roomId: z.number().int(),
+  roomName: z.string(),
+  supported: z.boolean(),
+  entrances: z.array(readingRoomEntranceSchema),
+  seatId: z.number().int(),
+  seatCode: z.string(),
+  descriptions: z.array(seatPositionDescriptionSchema)
 });
 
 const seatReservationSchema = z.object({
@@ -257,6 +291,20 @@ function formatReadingRoomDetailText(
     .join("\n");
 }
 
+function formatReadingRoomSeatPositionText(
+  result: {
+    position: LibraryReadingRoomSeatPositionResult;
+    room: { roomName: string };
+  }
+): string {
+  return [
+    `${result.room.roomName} | 좌석 ${result.position.seatCode}`,
+    ...result.position.descriptions.map(
+      (item) => `- ${item.entranceLabel}: ${item.description}`
+    )
+  ].join("\n");
+}
+
 function formatSeatReservationListText(
   result: Awaited<ReturnType<typeof listLibrarySeatReservations>>
 ): string {
@@ -368,6 +416,60 @@ export function registerLibrarySeatTools(
         structuredContent: {
           user: result.user,
           room: result.room
+        }
+      };
+    }
+  );
+
+  server.registerTool(
+    "mju_library_explain_seat_position",
+    {
+      title: "도서관 열람실 좌석 위치 설명",
+      description:
+        "자연도서관 열람실에 한해 문 기준으로 특정 좌석이 어느 책상/구역에 있는지 설명합니다. 문이 2개인 방은 출입구별 설명을 함께 반환합니다.",
+      inputSchema: {
+        roomId: z.number().int().positive().describe("열람실 room id 입니다."),
+        seatCode: z
+          .string()
+          .optional()
+          .describe("설명할 좌석 번호입니다. 예: 45"),
+        seatId: z
+          .number()
+          .int()
+          .positive()
+          .optional()
+          .describe("설명할 좌석 id 입니다."),
+        hopeDate: z
+          .string()
+          .optional()
+          .describe("좌석 목록 조회 기준 시각입니다. 예: 2026-03-23 09:00")
+      },
+      outputSchema: {
+        user: userSchema,
+        room: readingRoomDetailSchema,
+        position: readingRoomSeatPositionSchema
+      }
+    },
+    async ({ roomId, seatCode, seatId, hopeDate }) => {
+      if (!seatCode?.trim() && seatId === undefined) {
+        throw new Error("seatCode 또는 seatId 중 하나는 반드시 필요합니다.");
+      }
+
+      const credentials = await requireCredentials(context);
+      const client = context.createLibraryClient();
+      const result = await explainLibraryReadingRoomSeatPosition(client, credentials, {
+        roomId,
+        ...(seatCode?.trim() ? { seatCode } : {}),
+        ...(seatId !== undefined ? { seatId } : {}),
+        ...(hopeDate?.trim() ? { hopeDate } : {})
+      });
+
+      return {
+        content: [{ type: "text", text: formatReadingRoomSeatPositionText(result) }],
+        structuredContent: {
+          user: result.user,
+          room: result.room,
+          position: result.position
         }
       };
     }

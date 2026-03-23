@@ -19,6 +19,7 @@ Tool:
 - `mju_library_cancel_study_room_reservation`
 - `mju_library_list_reading_rooms`
 - `mju_library_get_reading_room`
+- `mju_library_explain_seat_position`
 - `mju_library_list_seat_reservations`
 - `mju_library_reserve_seat`
 - `mju_library_cancel_seat_reservation`
@@ -140,6 +141,50 @@ Tool:
 - 전체 좌석 수 / 사용 중 좌석 수 / 예약 가능 좌석 수
 
 `hopeDate` 를 주면 좌석 목록의 `isReservable` 이 그 시각 기준으로 계산됩니다.
+
+### `mju_library_explain_seat_position`
+
+자연도서관 열람실에 한해, 특정 좌석 번호가 문 기준으로 어느 책상/구역에 있는지 설명합니다.
+
+입력:
+
+- `roomId`
+- `seatCode?`
+- `seatId?`
+- `hopeDate?`
+
+반환 핵심:
+
+- 열람실 id / 이름
+- 좌석 id / 번호
+- 지원 여부(`supported`)
+- 출입구 메타데이터(`entrances`)
+- 출입구별 위치 설명(`descriptions`)
+
+예:
+
+```json
+{
+  "roomId": 17,
+  "seatCode": "45"
+}
+```
+
+예상 text 응답 예:
+
+```text
+4F 대학원열람실 | 좌석 45
+- 오른쪽 하단 출입구: 문에서 안쪽으로 두 번째 중앙 큰 책상의 아랫줄 오른쪽 두 번째 좌석
+```
+
+설명 방식:
+
+1. 열람실 상세 API로 실제 활성 좌석 목록을 읽음
+2. 자연도서관 열람실 배치 구조를 프런트 배치도 기준으로 복원
+3. 방별 문 위치 메타데이터를 적용
+4. 좌석 번호를 `문 바로 앞 / 문에서 안쪽 / 문에서 가장 먼`, `중앙 큰 책상`, `윗줄 / 아랫줄`, `왼쪽 / 오른쪽 몇 번째 좌석` 형태의 문장으로 변환
+
+문이 2개인 열람실은 출입구별 설명을 모두 반환합니다.
 
 ### `mju_library_list_seat_reservations`
 
@@ -277,10 +322,11 @@ preview 단계에서 확인하는 것:
 4. `GET /pyxis-api/1/api/seat-rooms/{roomId}`
 5. `GET /pyxis-api/1/api/rooms/{roomId}/seats`
 6. `GET /pyxis-api/1/api/rooms/{roomId}/seats/{seatId}`
-7. `POST /pyxis-api/1/api/seat-charges`
-8. `GET /pyxis-api/1/api/seat-charges/{reservationId}`
-9. `GET /pyxis-api/1/api/seat-charges`
-10. `DELETE /pyxis-api/1/api/seat-charges/{reservationId}`
+7. 프런트 배치도 규칙 + 방별 문 위치 메타데이터로 좌석 위치 설명 생성
+8. `POST /pyxis-api/1/api/seat-charges`
+9. `GET /pyxis-api/1/api/seat-charges/{reservationId}`
+10. `GET /pyxis-api/1/api/seat-charges`
+11. `DELETE /pyxis-api/1/api/seat-charges/{reservationId}`
 
 열람실은 URL 이동보다 JSON API 호출 재현이 핵심입니다.
 
@@ -314,3 +360,5 @@ preview 단계에서 확인하는 것:
 - 시간선(`timeLine`) 기반 좌석은 아직 지원하지 않습니다.
 - 열람실 상세 응답의 `reservable=false` 와 예약 가능 구간이 실제 즉시예약 성공 여부와 항상 일치하지는 않았습니다.
 - 좌석 예약 수정, 연장, 퇴실 처리 자동화는 아직 지원하지 않습니다.
+- 좌석 위치 설명은 현재 자연도서관 열람실만 지원합니다.
+- 좌석 위치 설명은 방별 문 위치 메타데이터를 사용하므로, 새 방을 추가할 때는 배치도와 실제 출입구를 함께 검증해야 합니다.

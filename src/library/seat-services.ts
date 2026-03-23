@@ -6,9 +6,11 @@ import {
   type LibraryCampusKey
 } from "./constants.js";
 import { MjuLibraryClient } from "./client.js";
+import { describeReadingRoomSeatPosition } from "./reading-room-seat-positions.js";
 import type {
   LibraryReadingRoomCampusAvailability,
   LibraryReadingRoomDetail,
+  LibraryReadingRoomSeatPositionResult,
   LibraryReadingRoomSummary,
   LibrarySeatChargeableHour,
   LibrarySeatDetail,
@@ -751,6 +753,51 @@ export async function getLibraryReadingRoomDetail(
   const user = await ensureAuthenticated(client, credentials);
   const room = await getReadingRoomDetailInternal(client, options);
   return { user, room };
+}
+
+export async function explainLibraryReadingRoomSeatPosition(
+  client: MjuLibraryClient,
+  credentials: ResolvedLmsCredentials,
+  options: {
+    roomId: number;
+    seatCode?: string;
+    seatId?: number;
+    hopeDate?: string;
+  }
+): Promise<{
+  user: LibraryUserInfo;
+  room: LibraryReadingRoomDetail;
+  seat: LibrarySeatSummary;
+  position: LibraryReadingRoomSeatPositionResult;
+}> {
+  const user = await ensureAuthenticated(client, credentials);
+  const room = await getReadingRoomDetailInternal(client, options);
+
+  const normalizedSeatCode = options.seatCode?.trim();
+  const seat = room.seats.find((item) => {
+    if (options.seatId !== undefined && item.seatId === options.seatId) {
+      return true;
+    }
+
+    if (normalizedSeatCode && item.seatCode === normalizedSeatCode) {
+      return true;
+    }
+
+    return false;
+  });
+
+  if (!seat) {
+    throw new Error("지정한 좌석을 열람실 좌석 목록에서 찾지 못했습니다.");
+  }
+
+  const position = describeReadingRoomSeatPosition(room, seat);
+
+  return {
+    user,
+    room,
+    seat,
+    position
+  };
 }
 
 export async function listLibrarySeatReservations(
